@@ -1,12 +1,15 @@
 package com.taskflow.task
 
+import com.taskflow.common.PageResponse
 import com.taskflow.common.error.FieldValidationException
 import com.taskflow.common.error.NotFoundException
 import com.taskflow.common.text.trimToNull
 import com.taskflow.project.ProjectService
 import com.taskflow.security.AuthenticatedUser
+import com.taskflow.task.sort.TaskSortResolver
 import com.taskflow.user.User
 import com.taskflow.user.UserRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -17,7 +20,20 @@ class TaskService(
     private val projects: ProjectService,
     private val users: UserRepository,
     private val responses: TaskResponseFactory,
+    private val sortResolver: TaskSortResolver,
 ) {
+    @Transactional(readOnly = true)
+    fun list(user: AuthenticatedUser, projectId: Long, query: TaskListQuery): PageResponse<TaskResponse> {
+        projects.requireOwned(user, projectId)
+        val specification = TaskSpecifications.inProject(projectId)
+            .and(TaskSpecifications.hasStatus(query.status))
+            .and(TaskSpecifications.hasPriority(query.priority))
+            .and(TaskSpecifications.assignedTo(query.assignee))
+            .and(TaskSpecifications.sortedBy(sortResolver.resolve(query.sort)))
+        val page = tasks.findAll(specification, PageRequest.of(query.page, query.size))
+        return PageResponse.from(page.map(responses::create))
+    }
+
     @Transactional
     fun create(user: AuthenticatedUser, projectId: Long, request: CreateTaskRequest): TaskResponse {
         val project = projects.requireOwned(user, projectId)

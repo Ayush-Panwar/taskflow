@@ -5,6 +5,9 @@ import com.taskflow.common.error.NotFoundException
 import com.taskflow.project.Project
 import com.taskflow.project.ProjectService
 import com.taskflow.security.AuthenticatedUser
+import com.taskflow.task.sort.DueDateSortStrategy
+import com.taskflow.task.sort.PrioritySortStrategy
+import com.taskflow.task.sort.TaskSortResolver
 import com.taskflow.user.User
 import com.taskflow.user.UserRepository
 import io.mockk.every
@@ -33,7 +36,13 @@ class TaskServiceTest {
     private val tasks = mockk<TaskRepository>()
     private val projects = mockk<ProjectService>()
     private val users = mockk<UserRepository>()
-    private val service = TaskService(tasks, projects, users, TaskResponseFactory(clock))
+    private val service = TaskService(
+        tasks,
+        projects,
+        users,
+        TaskResponseFactory(clock),
+        TaskSortResolver(listOf(DueDateSortStrategy(), PrioritySortStrategy())),
+    )
 
     private val currentUser = AuthenticatedUser(id = 1)
     private val owner = User("Asha", "asha@example.com", "hash").apply { id = 1 }
