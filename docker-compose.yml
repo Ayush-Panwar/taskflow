@@ -10,13 +10,15 @@ services:
     volumes:
       - database-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      # Over TCP, because during first-time setup a temporary server only answers on the local socket.
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 5s
       timeout: 5s
       retries: 20
 
   backend:
     build: ./backend
+    restart: on-failure
     environment:
       SPRING_PROFILES_ACTIVE: postgres
       DB_HOST: database
@@ -24,6 +26,8 @@ services:
       DB_USERNAME: ${DB_USERNAME:-taskflow}
       DB_PASSWORD: ${DB_PASSWORD:-taskflow}
       JWT_SECRET: ${JWT_SECRET:-}
+      JWT_EXPIRY: ${JWT_EXPIRY:-PT1H}
+      SWAGGER_ENABLED: ${SWAGGER_ENABLED:-true}
       TASKFLOW_TIME_ZONE: ${TASKFLOW_TIME_ZONE:-UTC}
       TASKFLOW_SEED_ENABLED: ${TASKFLOW_SEED_ENABLED:-true}
       TASKFLOW_SEED_PASSWORD: ${TASKFLOW_SEED_PASSWORD:-demo12345}
