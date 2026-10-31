@@ -1,0 +1,51 @@
+# Starts the whole app: docker compose up --build
+# The defaults are for trying the app locally. Copy .env.example to .env to override them.
+services:
+  database:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${DB_NAME:-taskflow}
+      POSTGRES_USER: ${DB_USERNAME:-taskflow}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-taskflow}
+    volumes:
+      - database-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build: ./backend
+    environment:
+      SPRING_PROFILES_ACTIVE: postgres
+      DB_HOST: database
+      DB_NAME: ${DB_NAME:-taskflow}
+      DB_USERNAME: ${DB_USERNAME:-taskflow}
+      DB_PASSWORD: ${DB_PASSWORD:-taskflow}
+      JWT_SECRET: ${JWT_SECRET:-}
+      TASKFLOW_TIME_ZONE: ${TASKFLOW_TIME_ZONE:-UTC}
+      TASKFLOW_SEED_ENABLED: ${TASKFLOW_SEED_ENABLED:-true}
+      TASKFLOW_SEED_PASSWORD: ${TASKFLOW_SEED_PASSWORD:-demo12345}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      database:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:8080/actuator/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+
+volumes:
+  database-data:

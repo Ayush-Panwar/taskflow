@@ -60,3 +60,8 @@ allOpen {
 tasks.withType<Test> {
     useJUnitPlatform()
 }
+
+// Only the runnable jar is needed. A second, plain jar would make the Docker COPY step ambiguous.
+tasks.jar {
+    enabled = false
+}
