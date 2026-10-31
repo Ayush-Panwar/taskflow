@@ -6,9 +6,13 @@ import com.taskflow.common.error.NotFoundException
 import com.taskflow.common.text.trimToNull
 import com.taskflow.project.ProjectService
 import com.taskflow.security.AuthenticatedUser
+import com.taskflow.task.activity.TaskActivityRepository
+import com.taskflow.task.activity.TaskActivityResponse
+import com.taskflow.task.activity.TaskStatusChanged
 import com.taskflow.task.sort.TaskSortResolver
 import com.taskflow.user.User
 import com.taskflow.user.UserRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
@@ -19,10 +23,12 @@ import java.time.LocalDate
 @Service
 class TaskService(
     private val tasks: TaskRepository,
+    private val activityLog: TaskActivityRepository,
     private val projects: ProjectService,
     private val users: UserRepository,
     private val responses: TaskResponseFactory,
     private val sortResolver: TaskSortResolver,
+    private val events: ApplicationEventPublisher,
     private val clock: Clock,
 ) {
     @Transactional(readOnly = true)
@@ -74,20 +80,33 @@ class TaskService(
         task.priority = request.priority ?: task.priority
         task.dueDate = request.dueDate
         task.assignee = resolveAssignee(request.assigneeId)
-        task.status = request.status ?: task.status
+        request.status?.let { changeStatus(task, it, user) }
         return flushAndRespond(task)
     }
 
     @Transactional
     fun updateStatus(user: AuthenticatedUser, taskId: Long, request: UpdateTaskStatusRequest): TaskResponse {
         val task = requireOwned(user, taskId)
-        task.status = request.status!!
+        changeStatus(task, request.status!!, user)
         return flushAndRespond(task)
     }
 
     @Transactional
     fun delete(user: AuthenticatedUser, taskId: Long) {
         tasks.delete(requireOwned(user, taskId))
+    }
+
+    @Transactional(readOnly = true)
+    fun activity(user: AuthenticatedUser, taskId: Long): List<TaskActivityResponse> {
+        requireOwned(user, taskId)
+        return activityLog.findAllByTaskIdOrderByOccurredAtDescIdDesc(taskId).map(TaskActivityResponse::from)
+    }
+
+    private fun changeStatus(task: Task, newStatus: TaskStatus, user: AuthenticatedUser) {
+        if (task.status == newStatus) return
+        val previousStatus = task.status
+        task.status = newStatus
+        events.publishEvent(TaskStatusChanged(task, previousStatus, newStatus, user.id))
     }
 
     /** Writes the change now, so that the response carries the new updatedAt. */

@@ -2,6 +2,7 @@ package com.taskflow.task
 
 import com.taskflow.common.PageResponse
 import com.taskflow.security.AuthenticatedUser
+import com.taskflow.task.activity.TaskActivityResponse
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -60,4 +61,10 @@ class TaskController(private val taskService: TaskService) {
         @AuthenticationPrincipal user: AuthenticatedUser,
         @PathVariable("id") taskId: Long,
     ) = taskService.delete(user, taskId)
+
+    @GetMapping("/api/tasks/{id}/activity")
+    fun activity(
+        @AuthenticationPrincipal user: AuthenticatedUser,
+        @PathVariable("id") taskId: Long,
+    ): List<TaskActivityResponse> = taskService.activity(user, taskId)
 }

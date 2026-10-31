@@ -5,6 +5,8 @@ import com.taskflow.common.error.NotFoundException
 import com.taskflow.project.Project
 import com.taskflow.project.ProjectService
 import com.taskflow.security.AuthenticatedUser
+import com.taskflow.task.activity.TaskActivityRepository
+import com.taskflow.task.activity.TaskStatusChanged
 import com.taskflow.task.sort.DueDateSortStrategy
 import com.taskflow.task.sort.PrioritySortStrategy
 import com.taskflow.task.sort.TaskSortResolver
@@ -23,6 +25,7 @@ import org.junit.jupiter.api.Assertions.assertSame
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Clock
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -36,12 +39,16 @@ class TaskServiceTest {
     private val tasks = mockk<TaskRepository>()
     private val projects = mockk<ProjectService>()
     private val users = mockk<UserRepository>()
+    private val activity = mockk<TaskActivityRepository>()
+    private val events = mockk<ApplicationEventPublisher>(relaxed = true)
     private val service = TaskService(
         tasks,
+        activity,
         projects,
         users,
         TaskResponseFactory(clock),
         TaskSortResolver(listOf(DueDateSortStrategy(), PrioritySortStrategy())),
+        events,
         clock,
     )
 
@@ -151,6 +158,50 @@ class TaskServiceTest {
         assertEquals(TaskStatus.DONE, response.status)
         assertEquals(TaskPriority.LOW, response.priority)
         verify { tasks.flush() }
+    }
+
+    @Test
+    fun `changing the status announces who changed it and from what`() {
+        val task = aTask(status = TaskStatus.TODO)
+        givenOwnedTask(task)
+
+        service.updateStatus(currentUser, 100, UpdateTaskStatusRequest(TaskStatus.DONE))
+
+        verify(exactly = 1) {
+            events.publishEvent(TaskStatusChanged(task, TaskStatus.TODO, TaskStatus.DONE, actorId = 1) as Any)
+        }
+    }
+
+    @Test
+    fun `a status change made through a full update is announced too`() {
+        val task = aTask(status = TaskStatus.TODO)
+        givenOwnedTask(task)
+
+        service.update(currentUser, 100, UpdateTaskRequest(title = "Task", status = TaskStatus.IN_PROGRESS))
+
+        verify(exactly = 1) {
+            events.publishEvent(TaskStatusChanged(task, TaskStatus.TODO, TaskStatus.IN_PROGRESS, actorId = 1) as Any)
+        }
+    }
+
+    @Test
+    fun `setting the same status again announces nothing`() {
+        givenOwnedTask(aTask(status = TaskStatus.DONE))
+
+        service.updateStatus(currentUser, 100, UpdateTaskStatusRequest(TaskStatus.DONE))
+        service.update(currentUser, 100, UpdateTaskRequest(title = "Task", status = TaskStatus.DONE))
+        service.update(currentUser, 100, UpdateTaskRequest(title = "Task"))
+
+        verify(exactly = 0) { events.publishEvent(any<Any>()) }
+    }
+
+    @Test
+    fun `activity cannot be read for a task the user cannot reach`() {
+        every { tasks.findOwnedTask(100, 1) } returns null
+
+        assertThrows<NotFoundException> { service.activity(currentUser, 100) }
+
+        verify(exactly = 0) { activity.findAllByTaskIdOrderByOccurredAtDescIdDesc(any()) }
     }
 
     @Test
