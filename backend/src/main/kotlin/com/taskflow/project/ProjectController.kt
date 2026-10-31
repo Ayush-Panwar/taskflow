@@ -1,6 +1,8 @@
 package com.taskflow.project
 
 import com.taskflow.security.AuthenticatedUser
+import io.swagger.v3.oas.annotations.Operation
+import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -14,12 +16,15 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/api/projects")
+@Tag(name = "Projects")
 class ProjectController(private val projectService: ProjectService) {
 
+    @Operation(summary = "List the current user's projects")
     @GetMapping
     fun list(@AuthenticationPrincipal user: AuthenticatedUser): List<ProjectResponse> =
         projectService.listFor(user)
 
+    @Operation(summary = "Create a project")
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun create(
@@ -28,6 +33,7 @@ class ProjectController(private val projectService: ProjectService) {
     ): ProjectResponse = projectService.create(user, request)
 
     /** Not in the original endpoint list: the board needs the project's name, even on a direct link. */
+    @Operation(summary = "Get one of the current user's projects")
     @GetMapping("/{id}")
     fun get(
         @AuthenticationPrincipal user: AuthenticatedUser,
