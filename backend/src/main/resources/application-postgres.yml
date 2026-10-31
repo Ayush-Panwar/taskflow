@@ -1,0 +1,6 @@
+# Used by Docker Compose and any deployment backed by a real database.
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:taskflow}
+    username: ${DB_USERNAME:taskflow}
+    password: ${DB_PASSWORD}

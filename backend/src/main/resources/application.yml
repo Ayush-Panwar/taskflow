@@ -1,0 +1,35 @@
+spring:
+  application:
+    name: taskflow
+  profiles:
+    default: dev
+  jpa:
+    # Mapping entities to DTOs happens inside service transactions, so the session
+    # does not need to stay open while the response is written.
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that the entities match it.
+      ddl-auto: validate
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+
+server:
+  error:
+    include-message: never
+    include-stacktrace: never
+    include-binding-errors: never
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: never
+
+taskflow:
+  # Time zone used to decide what "today" is. Blank means the server's time zone.
+  time-zone: ${TASKFLOW_TIME_ZONE:}

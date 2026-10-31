@@ -1,0 +1,6 @@
+# Default profile: runs with no setup, using an in-memory database that resets on restart.
+spring:
+  datasource:
+    url: jdbc:h2:mem:taskflow;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:

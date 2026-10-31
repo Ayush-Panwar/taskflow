@@ -1,0 +1,7 @@
+# Environment variables such as SPRING_DATASOURCE_URL override these values,
+# which is how CI runs the same tests against PostgreSQL.
+spring:
+  datasource:
+    url: jdbc:h2:mem:taskflow-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
