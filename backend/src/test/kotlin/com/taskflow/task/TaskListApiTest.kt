@@ -215,6 +215,11 @@ class TaskListApiTest : ApiTest() {
             jsonPath("$.fieldErrors[0].field") { value("page") }
             jsonPath("$.fieldErrors[0].message") { value("Must be a number") }
         }
+        listTasks("page=21474837&size=100") {
+            status { isBadRequest() }
+            jsonPath("$.fieldErrors[0].field") { value("page") }
+            jsonPath("$.fieldErrors[0].message") { value("Page is too large") }
+        }
         listTasks("size=1000") {
             status { isBadRequest() }
             jsonPath("$.fieldErrors[0].message") { value("Size must be between 1 and 100") }
