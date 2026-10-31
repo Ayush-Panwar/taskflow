@@ -8,28 +8,33 @@ export interface Session {
   user: User;
 }
 
+/** Used only if the browser blocks localStorage, so that a login still works until the page is reloaded. */
+let sessionInMemory: Session | null = null;
+
 export function loadSession(): Session | null {
   try {
     const stored = localStorage.getItem(SESSION_KEY);
     return stored ? (JSON.parse(stored) as Session) : null;
   } catch {
-    return null; // Storage is blocked or the value is corrupt, so treat the user as logged out.
+    return sessionInMemory; // Storage is blocked, or the stored value is corrupt.
   }
 }
 
 export function saveSession(session: Session) {
+  sessionInMemory = session;
   try {
     localStorage.setItem(SESSION_KEY, JSON.stringify(session));
   } catch {
-    // Storage is blocked. The login works until the page is reloaded.
+    // Storage is blocked. The copy in memory is used instead.
   }
 }
 
 export function clearSession() {
+  sessionInMemory = null;
   try {
     localStorage.removeItem(SESSION_KEY);
   } catch {
-    // Nothing was stored, so there is nothing to clear.
+    // Storage is blocked, so nothing was stored there.
   }
 }
 
