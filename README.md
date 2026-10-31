@@ -101,7 +101,7 @@ Almost all state in this app is server state: a local copy of data the API owns.
 **Things the brief left open**
 
 - **Three endpoints were added.** `GET /api/users` exists because the task form and the assignee filter need people to choose from. `GET /api/projects/{id}` exists because the board needs the project's name, even on a direct link. `GET /api/tasks/{id}/activity` is for the activity log.
-- **All users are one team.** The brief has no team or membership model, so a task can be assigned to any registered user, and `GET /api/users` lists everyone. With open registration, that means any logged-in user can see every name and email. This fits a small internal team but not a public product, where a real team model would be the first thing to add.
+- **All users are one team.** The brief has no team or membership model, so a task can be assigned to any registered user, and `GET /api/users` lists everyone's name. Email addresses are left out, so accounts can't be harvested through it. A real team model would be the first thing to add for a public product.
 - **An assignee gets no access.** The rule is that users only see projects they own, so being assigned a task does not let you open it. The assignee is a label until there is a sharing model.
 - **Optional fields.** Only the title is required on a task. Status defaults to `TODO`, priority to `MEDIUM`, and due date and description are optional.
 - **`PUT` semantics.** `PUT /api/tasks/{id}` replaces the editable fields, so leaving out the description, due date or assignee clears them. `status` and `priority` keep their current values if left out.
@@ -109,11 +109,11 @@ Almost all state in this app is server state: a local copy of data the API owns.
 
 **Decisions worth explaining**
 
-- **404, not 403, for other people's data.** A project someone else owns looks exactly like one that does not exist, so ids cannot be used to discover what exists. The ownership check is inside the database query, so it cannot be forgotten.
+- **404, not 403, for other people's data.** A project someone else owns looks exactly like one that does not exist, so ids cannot be used to discover what exists. Every task and project operation goes through one of two checks, `ProjectService.requireOwned` or `TaskService.requireOwned`, which have the owner in their database query.
 - **Each board column loads its own pages.** If the board fetched one mixed page of tasks, a column could look short or empty while its tasks sat on a later page. Each column instead uses the `status` filter and has its own "Load more".
-- **The server decides what is overdue.** The API returns `overdue` on each task, so a highlighted card and the summary count can never disagree. A finished task is never overdue, and a task due today is not overdue yet.
+- **The server decides what is overdue.** The API returns `overdue` on each task, so the highlighted cards and the summary count follow the same rule, whatever the browser's clock says. A finished task is never overdue, and a task due today is not overdue yet.
 - **The past-date rule applies on create only.** There are separate create and update request classes, because with a shared class an overdue task could not even have its title edited.
-- **Moves save in the background.** A card moves immediately, and if the request fails it goes back and the user sees why.
+- **Moves save in the background.** A card moves immediately, and if the request fails it goes back and the user sees why. Moves are sent one at a time, so moving a card twice quickly can't make the requests overlap.
 - **Same origin instead of CORS.** The browser only talks to one origin: Vite's proxy in development and nginx in Docker. No CORS configuration is needed. Hosting the frontend on another domain would need it added.
 - **JWT in `localStorage`.** This is simple and survives a reload, but scripts running on the page can read it, so an XSS flaw could expose the token. An `HttpOnly` cookie would prevent that, but would need CSRF protection. React's escaping and a one-hour expiry reduce the risk.
 - **One "today" for everyone.** A single configured time zone (`TASKFLOW_TIME_ZONE`) decides what "today" means. Date input limits use the browser's local date, so someone far from that zone could see a date rejected near midnight. Per-user time zones would fix this.
@@ -122,7 +122,7 @@ Almost all state in this app is server state: a local copy of data the API owns.
 
 ## Configuration
 
-Everything is set through environment variables, and no secrets are stored in the code. The one password in the repository is the public sample login above.
+Everything is set through environment variables, and no real secrets are stored in the code. The only passwords in the repository are the public sample login above and Docker Compose's default database password, which is for local use and can be overridden in `.env`.
 
 | Variable | Default | Purpose |
 |---|---|---|
