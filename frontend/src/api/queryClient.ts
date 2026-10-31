@@ -9,12 +9,20 @@ function shouldRetry(failureCount: number, error: unknown): boolean {
   return failureCount < 2;
 }
 
+/**
+ * networkMode 'always': by default, requests silently pause while the browser reports being offline,
+ * which would leave spinners running with no explanation. Trying anyway gives a clear error instead.
+ */
 export function createQueryClient(): QueryClient {
   return new QueryClient({
     defaultOptions: {
       queries: {
         retry: shouldRetry,
         staleTime: 10_000,
+        networkMode: 'always',
+      },
+      mutations: {
+        networkMode: 'always',
       },
     },
   });
