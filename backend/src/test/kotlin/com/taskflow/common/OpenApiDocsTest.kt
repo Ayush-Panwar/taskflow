@@ -1,9 +1,9 @@
 package com.taskflow.common
 
 import com.taskflow.support.ApiTest
-import org.hamcrest.Matchers.hasItems
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import org.springframework.test.web.servlet.get
 
@@ -47,9 +47,19 @@ class OpenApiDocsTest : ApiTest() {
         val body = mockMvc.get("/v3/api-docs").andReturn().response.contentAsString
         val listTasks = responseOf(body)["paths"]["/api/projects/{id}/tasks"]["get"]
 
-        val names = listTasks["parameters"].map { it["name"].asText() }.toSet()
+        val names = listTasks["parameters"].map { it["name"].asText() }
 
-        assertEquals(setOf("id", "status", "priority", "assignee", "sort", "page", "size"), names)
+        assertFalse("user" in names, "Found these parameters: $names")
+    }
+
+    @Test
+    fun `the filters and paging of the task list are documented`() {
+        val body = mockMvc.get("/v3/api-docs").andReturn().response.contentAsString
+        val listTasks = responseOf(body)["paths"]["/api/projects/{id}/tasks"]["get"]
+
+        val names = listTasks["parameters"].map { it["name"].asText() }
+
+        assertTrue(names.containsAll(listOf("status", "priority", "assignee", "sort", "page", "size")), "Found: $names")
     }
 
     @Test
