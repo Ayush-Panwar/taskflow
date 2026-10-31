@@ -42,6 +42,7 @@ class TaskServiceTest {
         users,
         TaskResponseFactory(clock),
         TaskSortResolver(listOf(DueDateSortStrategy(), PrioritySortStrategy())),
+        clock,
     )
 
     private val currentUser = AuthenticatedUser(id = 1)
@@ -161,6 +162,27 @@ class TaskServiceTest {
         service.delete(currentUser, 100)
 
         verify { tasks.delete(task) }
+    }
+
+    @Test
+    fun `summary fills in zero for statuses with no tasks and uses today's date`() {
+        every { projects.requireOwned(currentUser, 10) } returns project
+        every { tasks.countByStatus(10) } returns listOf(statusCount(TaskStatus.IN_PROGRESS, 4))
+        every { tasks.countOverdue(10, today) } returns 3
+
+        val summary = service.summary(currentUser, 10)
+
+        assertEquals(
+            mapOf(TaskStatus.TODO to 0L, TaskStatus.IN_PROGRESS to 4L, TaskStatus.DONE to 0L),
+            summary.counts,
+        )
+        assertEquals(4, summary.total)
+        assertEquals(3, summary.overdue)
+    }
+
+    private fun statusCount(status: TaskStatus, count: Long) = object : TaskRepository.StatusCount {
+        override val status = status
+        override val count = count
     }
 
     @Test

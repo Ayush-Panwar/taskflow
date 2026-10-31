@@ -19,6 +19,12 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 class TaskController(private val taskService: TaskService) {
 
+    @GetMapping("/api/projects/{id}/summary")
+    fun summary(
+        @AuthenticationPrincipal user: AuthenticatedUser,
+        @PathVariable("id") projectId: Long,
+    ): ProjectSummaryResponse = taskService.summary(user, projectId)
+
     @GetMapping("/api/projects/{id}/tasks")
     fun list(
         @AuthenticationPrincipal user: AuthenticatedUser,

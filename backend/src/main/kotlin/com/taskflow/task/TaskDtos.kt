@@ -72,3 +72,11 @@ data class TaskResponse(
     val createdAt: Instant,
     val updatedAt: Instant,
 )
+
+data class ProjectSummaryResponse(
+    val projectId: Long,
+    /** Always has an entry for every status, including those with no tasks. */
+    val counts: Map<TaskStatus, Long>,
+    val total: Long,
+    val overdue: Long,
+)

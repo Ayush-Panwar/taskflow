@@ -13,6 +13,8 @@ import org.springframework.data.domain.PageRequest
 import org.springframework.data.repository.findByIdOrNull
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
+import java.time.LocalDate
 
 @Service
 class TaskService(
@@ -21,7 +23,22 @@ class TaskService(
     private val users: UserRepository,
     private val responses: TaskResponseFactory,
     private val sortResolver: TaskSortResolver,
+    private val clock: Clock,
 ) {
+    @Transactional(readOnly = true)
+    fun summary(user: AuthenticatedUser, projectId: Long): ProjectSummaryResponse {
+        projects.requireOwned(user, projectId)
+        // GROUP BY returns no row for a status without tasks, so every status starts at zero.
+        val counts = TaskStatus.entries.associateWith { 0L } +
+            tasks.countByStatus(projectId).associate { it.status to it.count }
+        return ProjectSummaryResponse(
+            projectId = projectId,
+            counts = counts,
+            total = counts.values.sum(),
+            overdue = tasks.countOverdue(projectId, LocalDate.now(clock)),
+        )
+    }
+
     @Transactional(readOnly = true)
     fun list(user: AuthenticatedUser, projectId: Long, query: TaskListQuery): PageResponse<TaskResponse> {
         projects.requireOwned(user, projectId)
