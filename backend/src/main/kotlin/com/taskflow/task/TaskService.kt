@@ -3,6 +3,7 @@ package com.taskflow.task
 import com.taskflow.common.PageResponse
 import com.taskflow.common.error.FieldValidationException
 import com.taskflow.common.error.NotFoundException
+import com.taskflow.common.text.trimRequired
 import com.taskflow.common.text.trimToNull
 import com.taskflow.project.ProjectService
 import com.taskflow.security.AuthenticatedUser
@@ -61,7 +62,7 @@ class TaskService(
     fun create(user: AuthenticatedUser, projectId: Long, request: CreateTaskRequest): TaskResponse {
         val project = projects.requireOwned(user, projectId)
         val task = Task(
-            title = request.title!!.trim(),
+            title = request.title!!.trimRequired("title", "Title"),
             description = request.description.trimToNull(),
             status = request.status ?: TaskStatus.TODO,
             priority = request.priority ?: TaskPriority.MEDIUM,
@@ -75,7 +76,7 @@ class TaskService(
     @Transactional
     fun update(user: AuthenticatedUser, taskId: Long, request: UpdateTaskRequest): TaskResponse {
         val task = requireOwned(user, taskId)
-        task.title = request.title!!.trim()
+        task.title = request.title!!.trimRequired("title", "Title")
         task.description = request.description.trimToNull()
         task.priority = request.priority ?: task.priority
         task.dueDate = request.dueDate

@@ -131,6 +131,22 @@ class TaskApiTest : ApiTest() {
     }
 
     @Test
+    fun `a title made only of unusual whitespace counts as missing`() {
+        val user = newUser()
+        val projectId = createProject(user)
+
+        mockMvc.post("/api/projects/$projectId/tasks") {
+            header("Authorization", bearer(user.token))
+            contentType = MediaType.APPLICATION_JSON
+            content = json("title" to "\u2003\u2003")
+        }.andExpect {
+            status { isBadRequest() }
+            jsonPath("$.fieldErrors[0].field") { value("title") }
+            jsonPath("$.fieldErrors[0].message") { value("Title is required") }
+        }
+    }
+
+    @Test
     fun `the due date cannot be in the past on create, but today is allowed`() {
         val user = newUser()
         val projectId = createProject(user)

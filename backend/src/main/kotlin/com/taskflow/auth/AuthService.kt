@@ -3,6 +3,7 @@ package com.taskflow.auth
 import com.taskflow.common.error.EmailAlreadyRegisteredException
 import com.taskflow.common.error.FieldValidationException
 import com.taskflow.common.error.InvalidCredentialsException
+import com.taskflow.common.text.trimRequired
 import com.taskflow.security.TokenService
 import com.taskflow.user.User
 import com.taskflow.user.UserRepository
@@ -34,7 +35,7 @@ class AuthService(
             throw EmailAlreadyRegisteredException()
         }
         val user = User(
-            name = request.name!!.trim(),
+            name = request.name!!.trimRequired("name", "Name"),
             email = email,
             password = passwordEncoder.encode(password),
         )

@@ -2,6 +2,7 @@ package com.taskflow.project
 
 import com.taskflow.common.error.NotFoundException
 import com.taskflow.common.error.UnknownUserException
+import com.taskflow.common.text.trimRequired
 import com.taskflow.common.text.trimToNull
 import com.taskflow.security.AuthenticatedUser
 import com.taskflow.user.UserRepository
@@ -26,7 +27,7 @@ class ProjectService(
     fun create(user: AuthenticatedUser, request: CreateProjectRequest): ProjectResponse {
         val owner = users.findByIdOrNull(user.id) ?: throw UnknownUserException()
         val project = Project(
-            name = request.name!!.trim(),
+            name = request.name!!.trimRequired("name", "Name"),
             description = request.description.trimToNull(),
             owner = owner,
         )
