@@ -8,6 +8,6 @@ import org.springframework.transaction.annotation.Transactional
 class UserService(private val users: UserRepository) {
 
     @Transactional(readOnly = true)
-    fun listAll(): List<UserResponse> =
-        users.findAll(Sort.by("name")).map(UserResponse::from)
+    fun listAll(): List<UserSummary> =
+        users.findAll(Sort.by("name")).map(UserSummary::from)
 }

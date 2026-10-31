@@ -1,6 +1,6 @@
 package com.taskflow.task
 
-import com.taskflow.user.UserResponse
+import com.taskflow.user.UserSummary
 import jakarta.validation.constraints.FutureOrPresent
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -67,7 +67,7 @@ data class TaskResponse(
     val dueDate: LocalDate?,
     /** Decided by the server, so the highlighted cards and the summary count always agree. */
     val overdue: Boolean,
-    val assignee: UserResponse?,
+    val assignee: UserSummary?,
     val projectId: Long,
     val createdAt: Instant,
     val updatedAt: Instant,

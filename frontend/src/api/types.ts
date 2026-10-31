@@ -8,6 +8,12 @@ export interface User {
   email: string;
 }
 
+/** What other people can see about a user. */
+export interface UserSummary {
+  id: number;
+  name: string;
+}
+
 export interface AuthResponse {
   accessToken: string;
   tokenType: string;
@@ -43,7 +49,7 @@ export interface Task {
   /** A calendar date, yyyy-MM-dd. */
   dueDate: string | null;
   overdue: boolean;
-  assignee: User | null;
+  assignee: UserSummary | null;
   projectId: number;
   createdAt: string;
   updatedAt: string;
@@ -77,7 +83,7 @@ export interface Page<T> {
 
 export interface TaskActivity {
   id: number;
-  actor: User;
+  actor: UserSummary;
   fromStatus: TaskStatus;
   toStatus: TaskStatus;
   occurredAt: string;

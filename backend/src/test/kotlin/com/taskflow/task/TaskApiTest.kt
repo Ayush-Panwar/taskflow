@@ -78,6 +78,7 @@ class TaskApiTest : ApiTest() {
             jsonPath("$.assignee.id") { value(teammate.id) }
             jsonPath("$.assignee.name") { value("Teammate") }
             jsonPath("$.assignee.password") { doesNotExist() }
+            jsonPath("$.assignee.email") { doesNotExist() }
         }
     }
 

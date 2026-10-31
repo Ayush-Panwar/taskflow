@@ -58,7 +58,7 @@ export function TaskCard({ task, handlers, saving = false }: TaskCardProps) {
           {task.dueDate ? `Due ${formatDueDate(task.dueDate)}` : 'No due date'}
         </span>
         {task.assignee ? (
-          <span className="assignee" title={task.assignee.email}>
+          <span className="assignee">
             <span className="assignee__avatar" aria-hidden="true">
               {initialsOf(task.assignee.name)}
             </span>

@@ -1,6 +1,6 @@
 package com.taskflow.task
 
-import com.taskflow.user.UserResponse
+import com.taskflow.user.UserSummary
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.LocalDate
@@ -20,7 +20,7 @@ class TaskResponseFactory(private val clock: Clock) {
         priority = task.priority,
         dueDate = task.dueDate,
         overdue = task.isOverdue(LocalDate.now(clock)),
-        assignee = task.assignee?.let(UserResponse::from),
+        assignee = task.assignee?.let(UserSummary::from),
         projectId = task.project.id,
         createdAt = task.createdAt,
         updatedAt = task.updatedAt,
