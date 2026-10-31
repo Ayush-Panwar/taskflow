@@ -14,8 +14,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import org.hibernate.annotations.JdbcTypeCode
-import org.hibernate.type.SqlTypes
 import java.time.Instant
 
 /** One status change on a task: who made it and when. */
@@ -31,12 +29,10 @@ class TaskActivity(
     var actor: User,
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "from_status", nullable = false, updatable = false, length = 20)
     var fromStatus: TaskStatus,
 
     @Enumerated(EnumType.STRING)
-    @JdbcTypeCode(SqlTypes.VARCHAR)
     @Column(name = "to_status", nullable = false, updatable = false, length = 20)
     var toStatus: TaskStatus,
 
