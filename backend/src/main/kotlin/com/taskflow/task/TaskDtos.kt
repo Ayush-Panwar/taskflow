@@ -65,7 +65,7 @@ data class TaskResponse(
     val status: TaskStatus,
     val priority: TaskPriority,
     val dueDate: LocalDate?,
-    /** Decided by the server, so the highlighted cards and the summary count always agree. */
+    /** Decided by the server, so the highlighted cards and the summary count follow the same rule. */
     val overdue: Boolean,
     val assignee: UserSummary?,
     val projectId: Long,
