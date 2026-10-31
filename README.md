@@ -51,8 +51,8 @@ Swagger UI is at http://localhost:8080/swagger-ui.html. Call `POST /api/auth/log
 ## Running the tests
 
 ```bash
-cd backend && ./gradlew test    # 104 tests: services with MockK, full API with MockMvc and a real database
-cd frontend && npm test         # 103 tests: components with Jest and React Testing Library
+cd backend && ./gradlew test    # Services with MockK, and the full API with MockMvc and a real database
+cd frontend && npm test         # Components with Jest and React Testing Library
 cd frontend && npm run lint
 ```
 
