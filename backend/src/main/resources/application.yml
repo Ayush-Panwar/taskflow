@@ -31,5 +31,12 @@ management:
       show-details: never
 
 taskflow:
+  jwt:
+    # Blank means a random key per application start. Set it for anything that outlives one run.
+    secret: ${JWT_SECRET:}
+    expiry: ${JWT_EXPIRY:PT1H}
   # Time zone used to decide what "today" is. Blank means the server's time zone.
   time-zone: ${TASKFLOW_TIME_ZONE:}
+  seed:
+    enabled: ${TASKFLOW_SEED_ENABLED:false}
+    password: ${TASKFLOW_SEED_PASSWORD:}

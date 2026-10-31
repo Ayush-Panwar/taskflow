@@ -4,3 +4,8 @@ spring:
     url: jdbc:h2:mem:taskflow;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;DB_CLOSE_DELAY=-1
     username: sa
     password:
+
+taskflow:
+  seed:
+    enabled: true
+    password: demo12345 # Public sample login for local development, documented in the README.
