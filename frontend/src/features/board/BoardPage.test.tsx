@@ -260,6 +260,29 @@ describe('BoardPage', () => {
     expect(column('Done').getByText('Report')).toBeInTheDocument();
   });
 
+  it('saves repeated moves of a card one at a time, in order', async () => {
+    givenTasks([aTask({ id: 1, title: 'Report', status: 'TODO' })]);
+    const finishSaving: ((task: Task) => void)[] = [];
+    jest
+      .mocked(tasksApi.updateTaskStatus)
+      .mockImplementation(() => new Promise((resolve) => finishSaving.push(resolve)));
+    const { user } = await renderLoadedBoard();
+    await column('To Do').findByText('Report');
+
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Status of Report' }), 'IN_PROGRESS');
+    await column('In Progress').findByText('Report');
+    await user.selectOptions(screen.getByRole('combobox', { name: 'Status of Report' }), 'DONE');
+    await column('Done').findByText('Report');
+
+    expect(tasksApi.updateTaskStatus).toHaveBeenCalledTimes(1);
+    expect(tasksApi.updateTaskStatus).toHaveBeenLastCalledWith(1, 'IN_PROGRESS');
+
+    finishSaving[0](aTask({ id: 1, title: 'Report', status: 'IN_PROGRESS' }));
+
+    await waitFor(() => expect(tasksApi.updateTaskStatus).toHaveBeenCalledTimes(2));
+    expect(tasksApi.updateTaskStatus).toHaveBeenLastCalledWith(1, 'DONE');
+  });
+
   it('removes the overdue highlight straight away when a task is finished', async () => {
     givenTasks([aTask({ id: 1, title: 'Report', overdue: true, dueDate: '2020-01-01' })]);
     jest.mocked(tasksApi.updateTaskStatus).mockReturnValue(new Promise(() => {}));

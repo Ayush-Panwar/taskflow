@@ -101,6 +101,9 @@ export function useMoveTask(projectId: number) {
 
   return useMutation({
     mutationKey,
+    // Requests run one at a time, in order. Otherwise a card moved twice in quick succession could send
+    // two overlapping requests, and the second would fail its version check or the two could arrive reversed.
+    scope: { id: `move-task-${projectId}` },
     mutationFn: ({ task, status }: MoveTaskVariables) => updateTaskStatus(task.id, status),
     onMutate: async ({ task, status }) => {
       const tasksKey = queryKeys.tasks(projectId);
