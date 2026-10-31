@@ -1,0 +1,24 @@
+# Operating system and editors
+.DS_Store
+Thumbs.db
+.idea/
+*.iml
+.vscode/
+
+# Backend
+backend/.gradle/
+backend/build/
+backend/.kotlin/
+backend/bin/
+backend/out/
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+*.tsbuildinfo
+
+# Local configuration
+.env
+.env.local
+*.log

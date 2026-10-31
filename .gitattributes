@@ -1,0 +1,8 @@
+# Keep line endings consistent so scripts work on Linux containers and CI,
+# even when the repository is checked out on Windows.
+* text=auto eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.jar binary
+*.png binary
+*.ico binary
