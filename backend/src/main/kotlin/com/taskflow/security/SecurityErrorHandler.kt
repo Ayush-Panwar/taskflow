@@ -11,6 +11,8 @@ import org.springframework.security.access.AccessDeniedException
 import org.springframework.security.core.AuthenticationException
 import org.springframework.security.web.AuthenticationEntryPoint
 import org.springframework.security.web.access.AccessDeniedHandler
+import org.springframework.security.web.firewall.RequestRejectedException
+import org.springframework.security.web.firewall.RequestRejectedHandler
 import org.springframework.stereotype.Component
 
 /**
@@ -21,7 +23,7 @@ import org.springframework.stereotype.Component
 class SecurityErrorHandler(
     private val errors: ApiErrorFactory,
     private val objectMapper: ObjectMapper,
-) : AuthenticationEntryPoint, AccessDeniedHandler {
+) : AuthenticationEntryPoint, AccessDeniedHandler, RequestRejectedHandler {
 
     override fun commence(
         request: HttpServletRequest,
@@ -37,6 +39,13 @@ class SecurityErrorHandler(
         response: HttpServletResponse,
         exception: AccessDeniedException,
     ) = write(request, response, HttpStatus.FORBIDDEN, "FORBIDDEN", "You do not have access to this resource")
+
+    /** Spring Security's firewall refuses suspicious URLs, such as those containing // or ; */
+    override fun handle(
+        request: HttpServletRequest,
+        response: HttpServletResponse,
+        exception: RequestRejectedException,
+    ) = write(request, response, HttpStatus.BAD_REQUEST, "REQUEST_REJECTED", "This URL is not allowed")
 
     private fun write(
         request: HttpServletRequest,

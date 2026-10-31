@@ -14,6 +14,7 @@ import org.springframework.security.oauth2.jwt.JwtEncoderParameters
 import org.springframework.test.web.servlet.ResultActionsDsl
 import org.springframework.test.web.servlet.get
 import org.springframework.test.web.servlet.post
+import java.net.URI
 import java.time.Instant
 import java.time.temporal.ChronoUnit
 
@@ -92,6 +93,15 @@ class TokenSecurityApiTest : ApiTest() {
         }.andExpect {
             status { isMethodNotAllowed() }
             jsonPath("$.status") { value(405) }
+        }
+    }
+
+    @Test
+    fun `a URL refused by the security firewall still uses the standard error shape`() {
+        mockMvc.get(URI("/api/projects;x=1")).andExpect {
+            status { isBadRequest() }
+            jsonPath("$.status") { value(400) }
+            jsonPath("$.code") { value("REQUEST_REJECTED") }
         }
     }
 
