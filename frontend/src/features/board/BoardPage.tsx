@@ -1,4 +1,5 @@
 import {
+  defaultDropAnimation,
   DndContext,
   DragOverlay,
   MouseSensor,
@@ -8,8 +9,9 @@ import {
   useSensors,
   type DragEndEvent,
   type DragStartEvent,
+  type DropAnimationKeyframeResolver,
 } from '@dnd-kit/core';
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ApiError } from '../../api/client';
 import type { Project, Task, TaskStatus } from '../../api/types';
@@ -71,10 +73,24 @@ function ProjectLoader({ projectId }: { projectId: number }) {
 /** What the task form is open for: a new task when there is no task to edit. */
 type TaskFormTarget = { task?: Task };
 
+/**
+ * By default dnd-kit flies the floating card back to the original card. That's right when the card
+ * stays where it was. A moved card has already left for its new column, so flying back would go the
+ * wrong way, and it fades out where it was dropped instead.
+ */
+const fadeOutWhereDropped: DropAnimationKeyframeResolver = ({ transform: { initial } }) => {
+  const transform = `translate3d(${initial.x}px, ${initial.y}px, 0)`;
+  return [
+    { transform, opacity: 1 },
+    { transform, opacity: 0 },
+  ];
+};
+
 function Board({ project }: { project: Project }) {
   const boardFilters = useBoardFilters();
   const moveTask = useMoveTask(project.id);
   const pendingMoves = usePendingMoves(project.id);
+  const cardWasMoved = useRef(false);
 
   const [formTarget, setFormTarget] = useState<TaskFormTarget | null>(null);
   const [taskToDelete, setTaskToDelete] = useState<Task | null>(null);
@@ -97,6 +113,7 @@ function Board({ project }: { project: Project }) {
   );
 
   function handleDragStart(event: DragStartEvent) {
+    cardWasMoved.current = false;
     setDraggedTask(event.active.data.current?.task ?? null);
   }
 
@@ -105,6 +122,7 @@ function Board({ project }: { project: Project }) {
     const task = event.active.data.current?.task as Task | undefined;
     const status = event.over?.id as TaskStatus | undefined;
     if (task && status && status !== task.status) {
+      cardWasMoved.current = true;
       moveTaskMutate({ task, status });
     }
   }
@@ -150,7 +168,14 @@ function Board({ project }: { project: Project }) {
             />
           ))}
         </div>
-        <DragOverlay>{draggedTask && <TaskCard task={draggedTask} />}</DragOverlay>
+        <DragOverlay
+          dropAnimation={{
+            keyframes: (parameters) =>
+              (cardWasMoved.current ? fadeOutWhereDropped : defaultDropAnimation.keyframes)(parameters),
+          }}
+        >
+          {draggedTask && <TaskCard task={draggedTask} />}
+        </DragOverlay>
       </DndContext>
 
       {formTarget && (
