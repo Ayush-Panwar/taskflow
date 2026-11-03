@@ -9,6 +9,59 @@ A small team task tracker: a Spring Boot and Kotlin REST API with a React fronte
 | **Database** | H2 in memory by default, PostgreSQL through Docker Compose |
 | **Tests** | JUnit 5, MockK, MockMvc, Jest, React Testing Library |
 
+**Everything the brief asks for is built, including all five bonus items.** This page explains what each part does and where to find it, so you can follow the project without running it. To see it working, run it and take the [five-minute tour](#a-five-minute-tour).
+
+## What is built
+
+### The bonus items
+
+| Bonus item | What it does here | Where to look |
+|---|---|---|
+| **Database migrations** | Flyway builds the whole schema from four versioned SQL files, on both H2 and PostgreSQL. Hibernate only validates against them, so the app will not start if the code and the schema disagree. [More](#database-migrations-flyway) | [`db/migration/`](backend/src/main/resources/db/migration) |
+| **Activity log** | Records who changed a task's status, between which columns, and when. It appears as **History** in the task form, newest first. [More](#activity-log) | [`task/activity/`](backend/src/main/kotlin/com/taskflow/task/activity), [`TaskHistory.tsx`](frontend/src/features/board/TaskHistory.tsx) |
+| **Docker Compose** | One command builds and starts PostgreSQL, the API and the frontend, each waiting until the one before it is healthy. | [`docker-compose.yml`](docker-compose.yml) |
+| **OpenAPI and Swagger UI** | Every endpoint is documented and can be tried from the browser. | http://localhost:8080/swagger-ui.html |
+| **GitHub Actions** | Every push runs the backend tests on both H2 and PostgreSQL, and the frontend lint, tests and build. It then starts the whole Docker stack and signs in through it. | [`ci.yml`](.github/workflows/ci.yml) |
+
+### The app
+
+**Accounts and security**
+
+- Register and sign in, with validation on every field. Passwords are hashed with BCrypt.
+- All project, task and user endpoints need a valid JWT, which lasts one hour.
+- Logged-out users are sent to sign in, and an expired token returns them there with a clear message.
+- Users can only reach their own projects. Anything else returns a 404, so ids can't reveal what exists.
+
+**The board**
+
+- Three columns (To Do, In Progress, Done), and a summary bar with the count per status and the number overdue.
+- Move a card by dragging it, with a mouse or by touch, or with the status dropdown on every card, which also works from the keyboard.
+- Moves appear at once and save in the background. If a save fails, the card goes back and a message says why.
+- Overdue tasks are highlighted in red. The server decides what is overdue, so the cards and the summary always agree.
+- Filter by priority and assignee, and sort by due date or priority in either direction. These are kept in the URL, so a view survives a reload and can be shared.
+- Each column loads its own pages, with a "Load more" button.
+
+**Tasks**
+
+- Create and edit in a modal: title, description, priority, due date and assignee.
+- Delete with a confirmation step.
+- Validation messages appear under each field, from both the form and the API. A title is required and limited to 120 characters, and a new task can't be due in the past.
+
+**When things go wrong**
+
+- Every screen that loads data has loading, empty and error states, with a retry button.
+- If the server can't be reached, the message says so, rather than waiting forever.
+- All API errors share one JSON shape, with a message per field on a 400.
+- If two requests change the same task at once, the second gets a 409 instead of silently overwriting the first.
+- The layout works from phone width to desktop.
+
+**Engineering**
+
+- A layered backend (`Controller → Service → Repository`). JPA entities never leave the service layer; the API only returns DTOs.
+- [Five design patterns](#design-patterns), each named and explained.
+- More than 100 backend tests and more than 100 frontend tests, [run on every push](#running-the-tests).
+- Sample data with a sample login, and no real secrets in the code.
+
 ## Running it
 
 ### Option 1: without Docker
@@ -48,6 +101,20 @@ The demo user owns three projects, one of them empty so that the empty states ar
 
 Swagger UI is at http://localhost:8080/swagger-ui.html. Call `POST /api/auth/login`, then paste the `accessToken` into **Authorize**.
 
+## A five-minute tour
+
+With the app running:
+
+1. **See the board.** Sign in with the sample login and open **Website Redesign**. The summary bar shows the counts, and overdue cards are red.
+2. **Move a card.** Drag it to another column. The summary updates at once, and a reload shows it was saved. The dropdown on each card does the same from the keyboard.
+3. **Read the activity log.** Click the title of the card you moved. **History**, under the form, shows who moved it, between which columns, and when.
+4. **Filter and sort.** Choose an assignee and a priority, and watch the URL change. Reload, and the view is still there. Then try the sort options.
+5. **Break the rules.** Click **New task** and submit it empty, then with a past due date. Each field shows its own message.
+6. **Delete a task.** It asks for confirmation first.
+7. **Try someone else's project.** Sign out, register a new user and create a project. Sign back in with the sample login and open that project's URL. You get "Project not found".
+8. **Go offline.** Turn on Offline in the browser's developer tools and move a card. It goes back, and a message says why. Turn Offline off, and retry buttons recover the page.
+9. **Check the rest.** Open [Swagger UI](http://localhost:8080/swagger-ui.html) for the API, and this repository's **Actions** tab for the test runs.
+
 ## Running the tests
 
 ```bash
@@ -55,6 +122,12 @@ cd backend && ./gradlew test    # Services with MockK, and the full API with Moc
 cd frontend && npm test         # Components with Jest and React Testing Library
 cd frontend && npm run lint
 ```
+
+| Tests | Tools | What they cover |
+|---|---|---|
+| **Service tests** | JUnit 5, MockK | Business rules in the services, with the database mocked |
+| **API integration tests** | `@SpringBootTest`, MockMvc, a real database | The full request path, including Flyway's migrations: validation, security, ownership, filters, sorting, pagination, the summary and the activity log |
+| **Frontend tests** | Jest, React Testing Library | Forms, the board, task cards, protected routes, the API client and the session |
 
 To run the backend tests against PostgreSQL, set `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME` and `SPRING_DATASOURCE_PASSWORD` first. CI runs them on both databases, and also builds and starts the Docker Compose stack.
 
@@ -76,7 +149,32 @@ Browser ── React ── /api ──► Controller ──► Service ──�
 
 **Frontend.** `api/` is the only code that talks to the server. `features/` holds one folder per area of the app, `components/` holds reusable pieces such as `Button` and `Modal`, and `auth/` holds the session.
 
-**Schema.** Flyway migrations own the database schema, and Hibernate only validates that the entities match it. The same migrations run on H2 and PostgreSQL.
+### Database migrations (Flyway)
+
+Flyway owns the schema. It applies any new migrations when the app starts, so every database gets the same changes in the same order. Hibernate only validates that the entities match (`ddl-auto: validate`), and never changes a table itself. The same files run on H2 and PostgreSQL, and CI proves it on both.
+
+| Migration | What it creates |
+|---|---|
+| `V1__create_users.sql` | `users`, with a unique email |
+| `V2__create_projects.sql` | `projects`, each owned by a user |
+| `V3__create_tasks.sql` | `tasks`, with database checks on status and priority, and indexes for the board's queries |
+| `V4__create_task_activity.sql` | `task_activity`, the status history of each task |
+
+A schema change is a new numbered file. Existing migrations are never edited.
+
+### Activity log
+
+```
+TaskService ── TaskStatusChanged event ──► TaskActivityRecorder ──► task_activity table
+                                                                          │
+History in the task form ◄── GET /api/tasks/{id}/activity ◄───────────────┘
+```
+
+- **What is recorded:** who changed the status, the old and new status, and when.
+- **Every route is covered:** a drag, the dropdown, `PATCH /api/tasks/{id}/status` and a status sent with `PUT` all record an entry. A save that doesn't change the status records nothing.
+- **It can't get out of step:** the entry is saved in the same transaction as the status change, so both are saved or neither is.
+- **It follows the same access rule:** only the project's owner can read a task's history, and deleting a task removes its history.
+- **It uses the Observer pattern:** `TaskService` announces the change without knowing about the log, so a new reaction, such as a notification, would be a new listener.
 
 ### State management: TanStack Query
 
@@ -103,6 +201,7 @@ Almost all state in this app is server state: a local copy of data the API owns.
 - **Three endpoints were added.** `GET /api/users` exists because the task form and the assignee filter need people to choose from. `GET /api/projects/{id}` exists because the board needs the project's name, even on a direct link. `GET /api/tasks/{id}/activity` is for the activity log.
 - **All users are one team.** The brief has no team or membership model, so a task can be assigned to any registered user, and `GET /api/users` lists everyone's name. Email addresses are left out, so accounts can't be harvested through it. A real team model would be the first thing to add for a public product.
 - **An assignee gets no access.** The rule is that users only see projects they own, so being assigned a task does not let you open it. The assignee is a label until there is a sharing model.
+- **The activity log covers status changes.** That is what the brief describes, so editing a task's title, priority or other fields saves normally but adds no history.
 - **Optional fields.** Only the title is required on a task. Status defaults to `TODO`, priority to `MEDIUM`, and due date and description are optional.
 - **`PUT` semantics.** `PUT /api/tasks/{id}` replaces the editable fields, so leaving out the description, due date or assignee clears them. `status` and `priority` keep their current values if left out.
 - **Public endpoints besides login.** `/actuator/health` (needed by the Docker health check, and it reveals only `UP` or `DOWN`) and the API documentation are also public. Setting `SWAGGER_ENABLED=false` hides the documentation. No task, project or user data is reachable without a token.
@@ -142,4 +241,5 @@ Everything is set through environment variables, and no real secrets are stored 
 3. **Rate limiting on login,** to slow down password guessing.
 4. **Live updates,** so teammates see each other's moves without reloading.
 5. **Conflict detection for stale edits:** send the `version` with `PUT`, so that saving a form that has been open for a while warns about newer changes.
-6. **Browser end-to-end tests** with Playwright, especially for drag and drop, which the component tests cannot exercise.
+6. **A fuller activity log,** recording changes to the priority, assignee and other fields as well as the status.
+7. **Browser end-to-end tests** with Playwright, especially for drag and drop, which the component tests cannot exercise.
