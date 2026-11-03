@@ -2,6 +2,8 @@
 
 A small team task tracker: a Spring Boot and Kotlin REST API with a React frontend. People create projects, track tasks on a three-column board, and see at a glance what is overdue.
 
+**Demo video (4:28):** https://youtu.be/Qm2PW9LK86c
+
 | | |
 |---|---|
 | **Backend** | Spring Boot 3.5, Kotlin, Gradle, Spring Security (JWT), Spring Data JPA, Flyway |
@@ -9,7 +11,7 @@ A small team task tracker: a Spring Boot and Kotlin REST API with a React fronte
 | **Database** | H2 in memory by default, PostgreSQL through Docker Compose |
 | **Tests** | JUnit 5, MockK, MockMvc, Jest, React Testing Library |
 
-**Everything the brief asks for is built, including all five bonus items.** This page explains what each part does and where to find it, so you can follow the project without running it. To see it working, run it and take the [five-minute tour](#a-five-minute-tour).
+**Everything the brief asks for is built, including all five bonus items.** This page explains what each part does and where to find it, so you can follow the project without running it. To see it working, watch the demo video above, or run it and take the [five-minute tour](#a-five-minute-tour).
 
 ## What is built
 
